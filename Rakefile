@@ -30,27 +30,53 @@ task :post_reviewable_pull_requests, %i[repositories labels channel] do |_, args
   labels = args.labels.split("+")
   channel = args.channel
 
-  need_review = github.reviewable_pull_requests(repositories: repositories, labels: labels)[:need_review]
+  pull_requests = github.reviewable_pull_requests(repositories: repositories, labels: labels)
+  requested_reviewer = pull_requests[:requested_reviewer]
+  need_review = pull_requests[:need_review]
 
-  if need_review.empty?
+  if requested_reviewer.empty? && need_review.empty?
     slack_client.chat_postMessage(channel: channel, text: "There are no pull requests that need to be reviewed.", as_user: true)
     next
   end
 
-  slack_client.chat_postMessage(channel: channel, text: "The following pull requests need to be reviewed:", as_user: true)
+  unless requested_reviewer.empty?
+    slack_client.chat_postMessage(channel: channel, text: "The following pull requests have requested a reviewer:", as_user: true)
 
-  need_review.each do |pull_request|
-    slack_client.chat_postMessage(
-      channel: channel,
-      as_user: true,
-      attachments: [
-        {
-          fallback: "##{pull_request.number} - #{pull_request.title}:\n#{pull_request.html_url}",
-          title: "##{pull_request.number}",
-          text: "#{pull_request.title}:\n#{pull_request.html_url}",
-          color: "#03b70b"
-        }
-      ]
-    )
+    requested_reviewer.each do |hash|
+      pull_request = hash[:pull_request]
+      reviewers = hash[:reviewers]
+
+      slack_client.chat_postMessage(
+        channel: channel,
+        as_user: true,
+        attachments: [
+          {
+            fallback: "##{pull_request.number} - #{pull_request.title}:\n#{pull_request.html_url}\nReviewer: #{reviewers.join(", ")}",
+            title: "##{pull_request.number}",
+            text: "#{pull_request.title}:\n#{pull_request.html_url}\nReviewer: #{reviewers.join(", ")}",
+            color: "#03b70b"
+          }
+        ]
+      )
+    end
+  end
+
+  unless need_review.empty?
+    slack_client.chat_postMessage(channel: channel, text: "The following pull requests have no reviewer:", as_user: true)
+
+    need_review.each do |pull_request|
+      slack_client.chat_postMessage(
+        channel: channel,
+        as_user: true,
+        attachments: [
+          {
+            fallback: "##{pull_request.number} - #{pull_request.title}:\n#{pull_request.html_url}",
+            title: "##{pull_request.number}",
+            text: "#{pull_request.title}:\n#{pull_request.html_url}",
+            color: "#03b70b"
+          }
+        ]
+      )
+    end
   end
 end

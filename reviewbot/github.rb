@@ -88,12 +88,23 @@ module ReviewBot
         ready && has_labels
       end
 
-      # Filter out pull requests with reviews or reviewers
-      need_review = ready_pull_requests.select do |pull_request|
-        repository = pull_request.base.repo.full_name
+      # Get all pull request that requested a reviewer
+      requested_reviewer = ready_pull_requests.select do |pull_request|
+        !pull_request.requested_reviewers.empty?
+      end
 
-        requested_reviewers = pull_request.requested_reviewers
-        next false unless requested_reviewers.empty?
+      need_review = ready_pull_requests - requested_reviewer
+
+      requested_reviewer.map! do |pull_request|
+        {
+          pull_request: pull_request,
+          reviewers: pull_request.requested_reviewers.map(&:login)
+        }
+      end
+
+      # Filter out pull requests with reviews or reviewers
+      need_review = need_review.select do |pull_request|
+        repository = pull_request.base.repo.full_name
 
         reviews = client.pull_request_reviews(repository, pull_request.number).select do |review|
           %w[APPROVED CHANGES_REQUESTED].include?(review.state)
@@ -102,7 +113,7 @@ module ReviewBot
         reviews.empty?
       end
 
-      { requested_as_reviewer: requested_as_reviewer, need_review: need_review }
+      { requested_as_reviewer: requested_as_reviewer, requested_reviewer: requested_reviewer, need_review: need_review }
     end
   end
 end
