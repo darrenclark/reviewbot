@@ -7,6 +7,7 @@ module ReviewBot
     attr_reader :client
     attr_reader :organization
     attr_reader :ready_labels
+    attr_reader :do_not_review_labels
     attr_reader :label_repositories
     private :client
     private :organization
@@ -23,6 +24,8 @@ module ReviewBot
 
       @ready_labels = ENV["READY_LABELS"]&.split(",")
       raise "Missing ENV[\"READY_LABELS\"]" unless ready_labels
+
+      @do_not_review_labels = ENV["DO_NOT_REVIEW_LABELS"]&.split(",") || []
 
       @label_repositories = ENV["LABEL_REPOSITORIES"]&.split(",")&.map do |repository|
         if repository.include?("/")
@@ -85,7 +88,9 @@ module ReviewBot
             true
           end
 
-        ready && has_labels
+        marked_do_not_review = do_not_review_labels.any? { |label| pull_request_labels.include?(label) }
+
+        ready && has_labels && !marked_do_not_review
       end
 
       # Filter out pull requests with reviews or reviewers

@@ -22,6 +22,7 @@ We recommend to deploy Reviewbot to [Heroku](https://www.heroku.com).
 * `GITHUB_ACCESS_TOKEN`: Your [personal access token for GitHub](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line).
 * `ORGANIZATION`: Your GitHub organization. Reviewbot will use this organization for repositories that didn't specify an organization, i.e. don't contain a slash.
 * `READY_LABELS`: Comma-separated list of labels you use to mark pull requests ready for review, e.g. `ready`, `ready for review` etc.
+* `DO_NOT_REVIEW_LABELS`: Comma-separated list of labels you use to mark pull requests not ready for review, e.g. `wip`, `do not review` etc.
 * `LABEL_REPOSITORIES`: Comma-separated list of repositories that require additional labels. Monorepos that contain both iOS and Android code and use `iOS` and `Android` labels for example.
 
 # Rake Task
